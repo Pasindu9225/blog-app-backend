@@ -3,7 +3,7 @@ const {
   ACCESS_TOKEN_SECRET,
   REFRESH_TOKEN_SECRET,
 } = require("../config/index");
-const RefreshToken = require("../models/token"); // Ensure this path is correct
+const RefreshToken = require("../models/token");
 
 class JWTServices {
   static signAccessToken(payload, expiryTime) {

@@ -3,7 +3,7 @@ const bcrypt = require("bcryptjs");
 const User = require("../models/user");
 const UserDTO = require("../dto/user");
 const JWTServices = require("../services/JWTServices");
-const Refreshtoken = require('../models/token');
+const RefreshToken = require("../models/token");
 
 const passwordPattern = /^(?=.*[a-z])(?=.*\d)[a-zA-Z\d@#$%^&+=!]{8,25}$/;
 
@@ -63,7 +63,7 @@ const authController = {
 
       user = await userToRegister.save();
 
-      accessToken = JWTServices.signAccessToken({ _id: user.id, username: user.username },"30m");
+      accessToken = JWTServices.signAccessToken({ _id: user.id }, "30m");
       refreshToken = JWTServices.signRefreshToken({ _id: user.id }, "60m");
     } catch (error) {
       return next(error);
@@ -86,7 +86,7 @@ const authController = {
     });
 
     const userDto = new UserDTO(user);
-    return res.status(201).json({ user: userDto });
+    return res.status(201).json({ user: userDto, auth: true });
   },
 
   async login(req, res, next) {
@@ -130,22 +130,18 @@ const authController = {
       return next(error);
     }
 
-    const accessToken = JWTServices.signAccessToken({ _id: user.id},"30m");
+    const accessToken = JWTServices.signAccessToken({ _id: user.id }, "30m");
     const refreshToken = JWTServices.signRefreshToken({ _id: user.id }, "60m");
 
-
     try {
-      await Refreshtoken.updateOne(
-        {_id: user._id,  },
-        { token: refreshToken},
-        { upsert: true}
+      await RefreshToken.updateOne(
+        { userId: user._id },
+        { token: refreshToken },
+        { upsert: true }
       );
-      
     } catch (error) {
-      return next(error)
+      return next(error);
     }
-
-
 
     res.cookie("accessToken", accessToken, {
       maxAge: 1000 * 60 * 60 * 24,
@@ -157,10 +153,23 @@ const authController = {
       httpOnly: true,
     });
 
-
-
     const userDto = new UserDTO(user);
-    return res.status(200).json({ user: userDto });
+    return res.status(200).json({ user: userDto, auth: true });
+  },
+
+  async logout(req, res, next) {
+    console.log(req);
+    const { refreshToken } = req.cookies;
+    try {
+      await RefreshToken.deleteOne({ token: refreshToken });
+    } catch (error) {
+      return next(error);
+    }
+
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
+
+    res.status(200).json({ user: null, auth: false });
   },
 };
 
