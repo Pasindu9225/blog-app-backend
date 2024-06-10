@@ -7,11 +7,11 @@ const ACCESS_TOKEN_SECRET =
     "8da1d5117b9216d83628cddf35e6c4614ea3248d1c4589db30822d2a6af28b5c54c177df61b49e9133e2c2b82d0d7358a8833d229795dcd201ab8c7fa4a4983e";
 
 class JWTServices {
-  signAccesstoken(payload, expiryTime, secret = ACCESS_TOKEN_SECRET) {
-    return jwt.sign(payload, secret, { expiresIn: expiryTime });
+  signAccesstoken(payload, expiryTime) {
+    return jwt.sign(payload, ACCESS_TOKEN_SECRET, { expiresIn: expiryTime });
   }
 
-  signRefreshToken(payload, expiryTime, secret = REFRESH_TOKEN_SECRET) {
-    return jwt.sign(payload, secret, { expiresIn: expiryTime });
+  signRefreshToken(payload, expiryTime) {
+    return jwt.sign(payload, REFRESH_TOKEN_SECRET, { expiresIn: expiryTime });
   }
 }
