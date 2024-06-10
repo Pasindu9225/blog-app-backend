@@ -1,17 +1,39 @@
-const jwt = require('jsonwebtoken');
-
-const ACCESS_TOKEN_SECRET =
-  "648a00da769bd71fe0ad2d52e6ffbc3c6ba048f05420392d0ef3ba2a73333711ca2797472859d5f801939ff7960864ef2bf0b16c4578022571e3ff1736f3e0c0";
-
-  const REFRESH_TOKEN_SECRET =
-    "8da1d5117b9216d83628cddf35e6c4614ea3248d1c4589db30822d2a6af28b5c54c177df61b49e9133e2c2b82d0d7358a8833d229795dcd201ab8c7fa4a4983e";
+const jwt = require("jsonwebtoken");
+const {
+  ACCESS_TOKEN_SECRET,
+  REFRESH_TOKEN_SECRET,
+} = require("../config/index");
+const RefreshToken = require("../models/token"); // Ensure this path is correct
 
 class JWTServices {
-  signAccesstoken(payload, expiryTime) {
+  static signAccessToken(payload, expiryTime) {
     return jwt.sign(payload, ACCESS_TOKEN_SECRET, { expiresIn: expiryTime });
   }
 
-  signRefreshToken(payload, expiryTime) {
+  static signRefreshToken(payload, expiryTime) {
     return jwt.sign(payload, REFRESH_TOKEN_SECRET, { expiresIn: expiryTime });
   }
+
+  static verifyAccessToken(token) {
+    return jwt.verify(token, ACCESS_TOKEN_SECRET);
+  }
+
+  static verifyRefreshToken(token) {
+    return jwt.verify(token, REFRESH_TOKEN_SECRET);
+  }
+
+  static async storeRefreshToken(token, userId) {
+    try {
+      const newToken = new RefreshToken({
+        token: token,
+        userId: userId,
+      });
+
+      await newToken.save();
+    } catch (error) {
+      console.log(error);
+    }
+  }
 }
+
+module.exports = JWTServices;

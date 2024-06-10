@@ -10,7 +10,7 @@ const refreshTokenSchema = Schema({
 {TimeRanges: true}
 );
 
-modelName.exports = mongoose.model(
+module.exports = mongoose.model(
   "RefreshToken",
   refreshTokenSchema,
   "tokens"

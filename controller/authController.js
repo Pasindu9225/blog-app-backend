@@ -2,6 +2,8 @@ const Joi = require("joi");
 const bcrypt = require("bcryptjs");
 const User = require("../models/user");
 const UserDTO = require("../dto/user");
+const JWTServices = require("../services/JWTServices");
+const Refreshtoken = require('../models/token');
 
 const passwordPattern = /^(?=.*[a-z])(?=.*\d)[a-zA-Z\d@#$%^&+=!]{8,25}$/;
 
@@ -47,19 +49,46 @@ const authController = {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const userToRegister = new User({
-      name,
-      username,
-      email,
-      password: hashedPassword,
+    let accessToken;
+    let refreshToken;
+
+    let user;
+    try {
+      const userToRegister = new User({
+        name,
+        username,
+        email,
+        password: hashedPassword,
+      });
+
+      user = await userToRegister.save();
+
+      accessToken = JWTServices.signAccessToken({ _id: user.id, username: user.username },"30m");
+      refreshToken = JWTServices.signRefreshToken({ _id: user.id }, "60m");
+    } catch (error) {
+      return next(error);
+    }
+
+    try {
+      await JWTServices.storeRefreshToken(refreshToken, user._id);
+    } catch (error) {
+      return next(error);
+    }
+
+    res.cookie("accessToken", accessToken, {
+      maxAge: 1000 * 60 * 60 * 24,
+      httpOnly: true,
     });
 
-    const user = await userToRegister.save();
-
+    res.cookie("refreshToken", refreshToken, {
+      maxAge: 1000 * 60 * 60 * 24,
+      httpOnly: true,
+    });
 
     const userDto = new UserDTO(user);
-    return res.status(201).json({ user:userDto });
+    return res.status(201).json({ user: userDto });
   },
+
   async login(req, res, next) {
     const userLoginSchema = Joi.object({
       username: Joi.string().min(5).max(30).required(),
@@ -100,6 +129,35 @@ const authController = {
     } catch (error) {
       return next(error);
     }
+
+    const accessToken = JWTServices.signAccessToken({ _id: user.id},"30m");
+    const refreshToken = JWTServices.signRefreshToken({ _id: user.id }, "60m");
+
+
+    try {
+      await Refreshtoken.updateOne(
+        {_id: user._id,  },
+        { token: refreshToken},
+        { upsert: true}
+      );
+      
+    } catch (error) {
+      return next(error)
+    }
+
+
+
+    res.cookie("accessToken", accessToken, {
+      maxAge: 1000 * 60 * 60 * 24,
+      httpOnly: true,
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      maxAge: 1000 * 60 * 60 * 24,
+      httpOnly: true,
+    });
+
+
 
     const userDto = new UserDTO(user);
     return res.status(200).json({ user: userDto });

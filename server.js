@@ -3,8 +3,11 @@ const dbconnect = require("./database/index");
 const { PORT } = require("./config");
 const router = require("./routes");
 const errorHandler = require("./middlewares/errorHandler");
+const cookieParser = require('cookie-parser');
 
 const app = express();
+
+app.use(cookieParser());
 
 app.use(express.json());
 
