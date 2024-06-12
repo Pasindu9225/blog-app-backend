@@ -97,7 +97,56 @@ const blogController = {
   },
 
   async update(req, res, next) {
-    // To be implemented
+    const updateBlogSchema = Joi.object({
+      title: Joi.string(),
+      content: Joi.string(),
+      author: Joi.string().regex(mongodbIdPattern).required(),
+      blogId: Joi.string().regex(mongodbIdPattern).required(),
+      photo: Joi.string(),
+    });
+
+    const { error } = this.updateBlogSchema.validate(req.body);
+
+    const { title, content, author, blogId, photo } = req.body;
+
+    let blog;
+    try {
+      blog = await Blog.findOne({ _id: blogId });
+    } catch (error) {
+      return next(error);
+    }
+
+    if (photo) {
+      let previousPhoto = blog.photoPath;
+
+      previousPhoto = previousPhoto.split("/").at(-1);
+
+      fs.unlinkSync(`storage/${previousPhoto}`);
+
+      const buffer = Buffer.from(
+        photo.replace(/^data:image\/(png|jpg|jpeg);based64,/, ""),
+        "base64"
+      );
+
+      const imagePath = `${Date.now()}-${author}.png`;
+
+      try {
+        fs.writeFileSync(`storage/${imagePath}`, buffer);
+      } catch (error) {
+        return next(error);
+      }
+
+      await Blog.updateOne({ _id: blogId }),
+        {
+          title,
+          content,
+          photoPath: `${BACKEND_SERVICE_PATH}/storage/${imagePath}`,
+        };
+    } else {
+      await Blog.updateOne({ _id: blogId }, { title, content });
+    }
+
+    return res.status(200).json({ message: "blog update" });
   },
 
   async delete(req, res, next) {
