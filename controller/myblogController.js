@@ -4,6 +4,7 @@ const fs = require("fs");
 const Blog = require("../models/blog");
 const BlogDTO = require("../dto/blog");
 const BlogDetailsDTO = require("../dto/blogDetails");
+const Comment = require("../models/comment");
 
 const mongodbIdPattern = /^[0-9a-fA-F]{24}$/;
 
@@ -170,10 +171,11 @@ const blogController = {
 
     try {
       await Blog.deleteOne({ _id: id });
-      return res.status(200).json({ message: "Blog deleted" });
+      await Comment.deleteMany({ blog: id });
     } catch (error) {
       return next(error);
     }
+    return res.status(200).json({ message: "Blog deleted" });
   },
 };
 

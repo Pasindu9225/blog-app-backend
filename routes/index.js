@@ -2,6 +2,7 @@ const express = require("express");
 const authController = require("../controller/authController");
 const auth = require("../middlewares/auth");
 const blogController = require("../controller/myblogController");
+const commentController = require("../controller/commentController");
 
 const router = express.Router();
 
@@ -16,6 +17,8 @@ router.post("/blog", auth, blogController.create);
 router.get("/blog/all", auth, blogController.getAll);
 router.get("/blog/:id", auth, blogController.getById);
 router.put("/blog", auth, blogController.update);
-router.get("/blog/:id", auth, blogController.delete);
+router.delete("/blog/:id", auth, blogController.delete);
+router.post("/comment", auth, commentController.create);
+router.get("/comment/:id", auth, commentController.getById);
 
 module.exports = router;
