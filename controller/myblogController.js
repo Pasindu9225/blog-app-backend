@@ -1,3 +1,4 @@
+// controller/blogController.js
 const Joi = require("joi");
 const fs = require("fs");
 const Blog = require("../models/blog");
@@ -105,7 +106,11 @@ const blogController = {
       photo: Joi.string(),
     });
 
-    const { error } = this.updateBlogSchema.validate(req.body);
+    const { error } = updateBlogSchema.validate(req.body);
+
+    if (error) {
+      return next(error);
+    }
 
     const { title, content, author, blogId, photo } = req.body;
 
@@ -124,7 +129,7 @@ const blogController = {
       fs.unlinkSync(`storage/${previousPhoto}`);
 
       const buffer = Buffer.from(
-        photo.replace(/^data:image\/(png|jpg|jpeg);based64,/, ""),
+        photo.replace(/^data:image\/(png|jpg|jpeg);base64,/, ""),
         "base64"
       );
 
@@ -136,21 +141,39 @@ const blogController = {
         return next(error);
       }
 
-      await Blog.updateOne({ _id: blogId }),
+      await Blog.updateOne(
+        { _id: blogId },
         {
           title,
           content,
           photoPath: `${BACKEND_SERVICE_PATH}/storage/${imagePath}`,
-        };
+        }
+      );
     } else {
       await Blog.updateOne({ _id: blogId }, { title, content });
     }
 
-    return res.status(200).json({ message: "blog update" });
+    return res.status(200).json({ message: "Blog updated" });
   },
 
   async delete(req, res, next) {
-    // To be implemented
+    const deleteBlogSchema = Joi.object({
+      id: Joi.string().regex(mongodbIdPattern).required(),
+    });
+    const { error } = deleteBlogSchema.validate(req.params);
+
+    if (error) {
+      return next(error);
+    }
+
+    const { id } = req.params;
+
+    try {
+      await Blog.deleteOne({ _id: id });
+      return res.status(200).json({ message: "Blog deleted" });
+    } catch (error) {
+      return next(error);
+    }
   },
 };
 
